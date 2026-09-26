@@ -97,7 +97,8 @@ public class PingSpoof extends Module {
       if (p != null && p.isEnabled() && p.scrollAdjust.is() && vertical != (double)0.0F) {
          if (class_310.method_1551().field_1755 != null) {
             return false;
-         } else if (p.scrollKey.isBound() && !p.scrollKey.down()) {
+         } else if (!p.scrollKey.isBound() || !p.scrollKey.down()) {
+            // An unbound modifier must never consume normal hotbar scrolling.
             return false;
          } else {
             double step = p.scrollStep.val() * Math.signum(vertical);

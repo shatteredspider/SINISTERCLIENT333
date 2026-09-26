@@ -6,12 +6,15 @@ import dev.sevenclient.module.ModuleManager;
 import dev.sevenclient.module.setting.Setting;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
-import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import net.fabricmc.loader.api.FabricLoader;
 
 public final class ConfigManager {
@@ -41,13 +44,28 @@ public final class ConfigManager {
          }
       }
 
+      Path temp = null;
       try {
          Files.createDirectories(this.file.getParent());
-         Files.write(this.file, String.join(System.lineSeparator(), lines).getBytes(StandardCharsets.UTF_8), new OpenOption[0]);
-      } catch (IOException var6) {
-         SevenClient.LOG.error("Failed to save config", var6);
+         temp = Files.createTempFile(this.file.getParent(), "config-", ".tmp");
+         Files.writeString(temp, String.join(System.lineSeparator(), lines), StandardCharsets.UTF_8);
+         try {
+            Files.move(temp, this.file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+         } catch (AtomicMoveNotSupportedException unsupported) {
+            // Never replace a valid config with a non-atomic move.
+            SevenClient.LOG.error("Atomic config save is not supported", unsupported);
+         }
+      } catch (IOException error) {
+         SevenClient.LOG.error("Failed to save config", error);
+      } finally {
+         if (temp != null) {
+            try {
+               Files.deleteIfExists(temp);
+            } catch (IOException error) {
+               SevenClient.LOG.error("Failed to remove temporary config", error);
+            }
+         }
       }
-
    }
 
    public void load() {
@@ -55,6 +73,9 @@ public final class ConfigManager {
          this.save();
       } else {
          try {
+            // Retain the last enabled value for each module, but apply it only after
+            // all settings have been restored, regardless of config line order.
+            Map<Module, Boolean> enabled = new LinkedHashMap();
             for(String line : Files.readAllLines(this.file, StandardCharsets.UTF_8)) {
                if (!line.isBlank() && !line.startsWith("#")) {
                   int eq = line.indexOf(61);
@@ -66,7 +87,7 @@ public final class ConfigManager {
                      Module m = this.modules.byName(moduleName);
                      if (m != null) {
                         if (key.equals("enabled")) {
-                           m.setEnabled(Boolean.parseBoolean(value));
+                           enabled.put(m, Boolean.parseBoolean(value));
                         } else {
                            for(Setting<?> s : m.settings()) {
                               if (s.name().equals(key)) {
@@ -79,8 +100,11 @@ public final class ConfigManager {
                   }
                }
             }
-         } catch (IOException var11) {
-            SevenClient.LOG.error("Failed to load config", var11);
+            for(Map.Entry<Module, Boolean> entry : enabled.entrySet()) {
+               entry.getKey().setEnabled(entry.getValue());
+            }
+         } catch (IOException error) {
+            SevenClient.LOG.error("Failed to load config", error);
          }
       }
 

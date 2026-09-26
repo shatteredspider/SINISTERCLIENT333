@@ -64,12 +64,19 @@ public abstract class Module {
             } else {
                this.onDisable();
             }
-         } catch (Throwable var3) {
-            SevenClient.LOG.error("Module {} threw on state change", this.name, var3);
-            Diagnostics.error(this.name, var3);
+         } catch (Throwable error) {
+            // Only a failed enable can be rolled back safely. Preserve a failed disable's
+            // disabled flag; rerunning onDisable or claiming it is enabled is unsafe.
+            if (state && this.enabled) {
+               this.enabled = false;
+            }
+            SevenClient.LOG.error("Module {} threw on state change", this.name, error);
+            Diagnostics.error(this.name, error);
+            return;
          }
 
-         if (notifyToggles) {
+         // onEnable may deliberately turn itself off (ClickGUI). Report the final state.
+         if (notifyToggles && this.enabled == state) {
             Notifications.moduleToggled(this.name, state);
          }
       }

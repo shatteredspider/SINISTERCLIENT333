@@ -105,22 +105,47 @@ public class TargetESP extends Module {
       double[] xs = new double[]{b.field_1323, b.field_1320};
       double[] ys = new double[]{b.field_1322, b.field_1325};
       double[] zs = new double[]{b.field_1321, b.field_1324};
-
+      class_243 f = class_243.method_1030(camPitch, camYaw).method_1029();
+      class_243 r = class_243.method_1030(0.0F, camYaw + 90.0F).method_1029();
+      class_243 u = r.method_1036(f).method_1029();
+      double[][] corners = new double[8][3];
+      int corner = 0;
       for(double x : xs) {
          for(double y : ys) {
             for(double z : zs) {
-               double[] p = this.project(new class_243(x, y, z), origin, camYaw, camPitch, sw, sh, fov);
-               if (p == null) {
-                  return;
-               }
-
-               any = true;
-               minX = Math.min(minX, p[0]);
-               maxX = Math.max(maxX, p[0]);
-               minY = Math.min(minY, p[1]);
-               maxY = Math.max(maxY, p[1]);
+               class_243 d = new class_243(x, y, z).method_1020(origin);
+               corners[corner++] = new double[]{d.method_1026(r), d.method_1026(u), d.method_1026(f)};
             }
          }
+      }
+      List<double[]> visible = new ArrayList();
+      for(double[] point : corners) {
+         if (point[2] >= 0.05) {
+            visible.add(point);
+         }
+      }
+      // Clip each box edge that crosses the near plane, rather than rejecting
+      // the entire entity when just one corner is behind the camera.
+      for(int i = 0; i < corners.length; ++i) {
+         for(int axis = 0; axis < 3; ++axis) {
+            int neighbor = i ^ (1 << axis);
+            if (i < neighbor) {
+               double[] a = corners[i];
+               double[] end = corners[neighbor];
+               if ((a[2] < 0.05) != (end[2] < 0.05)) {
+                  double t = (0.05 - a[2]) / (end[2] - a[2]);
+                  visible.add(new double[]{a[0] + t * (end[0] - a[0]), a[1] + t * (end[1] - a[1]), 0.05});
+               }
+            }
+         }
+      }
+      for(double[] point : visible) {
+         double[] p = this.project(point[0], point[1], point[2], sw, sh, fov);
+         any = true;
+         minX = Math.min(minX, p[0]);
+         maxX = Math.max(maxX, p[0]);
+         minY = Math.min(minY, p[1]);
+         maxY = Math.max(maxY, p[1]);
       }
 
       if (any && !(maxX < (double)0.0F) && !(minX > (double)sw) && !(maxY < (double)0.0F) && !(minY > (double)sh)) {
@@ -175,23 +200,12 @@ public class TargetESP extends Module {
 
    }
 
-   private double[] project(class_243 pos, class_243 origin, float camYaw, float camPitch, int sw, int sh, double fovDeg) {
-      class_243 d = pos.method_1020(origin);
-      class_243 f = class_243.method_1030(camPitch, camYaw).method_1029();
-      class_243 r = class_243.method_1030(0.0F, camYaw + 90.0F).method_1029();
-      class_243 u = r.method_1036(f).method_1029();
-      double zc = d.method_1026(f);
-      if (zc < 0.05) {
-         return null;
-      } else {
-         double xc = d.method_1026(r);
-         double yc = d.method_1026(u);
-         double tanHalf = Math.tan(Math.toRadians(fovDeg) * (double)0.5F);
-         double aspect = (double)sw / (double)Math.max(1, sh);
-         double sx = (double)sw * (double)0.5F * ((double)1.0F + xc / zc / (tanHalf * aspect));
-         double sy = (double)sh * (double)0.5F * ((double)1.0F - yc / zc / tanHalf);
-         return new double[]{sx, sy};
-      }
+   private double[] project(double xc, double yc, double zc, int sw, int sh, double fovDeg) {
+      double tanHalf = Math.tan(Math.toRadians(fovDeg) * (double)0.5F);
+      double aspect = (double)sw / (double)Math.max(1, sh);
+      double sx = (double)sw * (double)0.5F * ((double)1.0F + xc / zc / (tanHalf * aspect));
+      double sy = (double)sh * (double)0.5F * ((double)1.0F - yc / zc / tanHalf);
+      return new double[]{sx, sy};
    }
 
    private void drawRect(class_332 ctx, int x1, int y1, int x2, int y2, int c) {

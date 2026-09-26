@@ -135,6 +135,10 @@ public class JumpReset extends Module {
    }
 
    private void fire() {
+      // A delayed jump must satisfy the gates at execution time too.
+      if (!this.isEnabled() || !this.conditionsOk()) {
+         return;
+      }
       this.jump().press(Human.tapHold());
       Human.act(60L);
       ++HumanDiag.jumpResets;
