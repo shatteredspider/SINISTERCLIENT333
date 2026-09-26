@@ -20,44 +20,40 @@ public final class TargetUtil {
 
    public static class_1309 find(double range, boolean enemiesOnly, boolean playersOnly) {
       class_310 mc = class_310.method_1551();
-      if (mc.field_1724 != null && mc.field_1687 != null) {
-         class_243 eye = mc.field_1724.method_33571();
-         class_1309 best = null;
-         double bestScore = Double.MAX_VALUE;
-
-         for(class_1297 e : mc.field_1687.method_18112()) {
-            if (e instanceof class_1309) {
-               class_1309 living = (class_1309)e;
-               if (e != mc.field_1724 && e.method_5805() && !e.method_31481() && (!living.method_5767() || e instanceof class_1657) && (!playersOnly || e instanceof class_1657)) {
-                  if (e instanceof class_1657) {
-                     class_1657 p = (class_1657)e;
-                     if (p.method_7325()) {
-                        continue;
-                     }
-                  }
-
-                  if (!enemiesOnly || SevenClient.get().enemies.is(e)) {
-                     double dist = eye.method_1022(e.method_33571());
-                     if (!(dist > range)) {
-                        float[] rot = Rotations.to(eye, nearestPoint(eye, e));
-                        double dYaw = (double)Math.abs(Rotations.wrap(rot[0] - mc.field_1724.method_36454()));
-                        double dPitch = (double)Math.abs(rot[1] - mc.field_1724.method_36455());
-                        double angle = Math.sqrt(dYaw * dYaw + dPitch * dPitch);
-                        double score = dist * (double)1.0F + angle * 0.045;
-                        if (score < bestScore) {
-                           bestScore = score;
-                           best = living;
-                        }
-                     }
+      if (mc.field_1724 == null || mc.field_1687 == null) {
+         return null;
+      }
+      class_243 eye = mc.field_1724.method_33571();
+      class_1309 best = null;
+      double bestScore = Double.MAX_VALUE;
+      class_1657 preferred = TargetPriority.winner(range, enemiesOnly);
+      if (preferred != null) {
+         return preferred;
+      }
+      for (class_1297 e : mc.field_1687.method_18112()) {
+         if (e instanceof class_1309 living && e != mc.field_1724 && e.method_5805()
+               && !e.method_31481() && (!living.method_5767() || e instanceof class_1657)
+               && (!playersOnly || e instanceof class_1657)) {
+            if (e instanceof class_1657 p && (p.method_7325() || SevenClient.get().friends.is(p))) {
+               continue;
+            }
+            if (!enemiesOnly || SevenClient.get().enemies.is(e)) {
+               double dist = eye.method_1022(e.method_33571());
+               if (!(dist > range)) {
+                  float[] rot = Rotations.to(eye, nearestPoint(eye, e));
+                  double dYaw = Math.abs(Rotations.wrap(rot[0] - mc.field_1724.method_36454()));
+                  double dPitch = Math.abs(rot[1] - mc.field_1724.method_36455());
+                  double angle = Math.sqrt(dYaw * dYaw + dPitch * dPitch);
+                  double score = dist + angle * 0.045;
+                  if (score < bestScore) {
+                     bestScore = score;
+                     best = living;
                   }
                }
             }
          }
-
-         return best;
-      } else {
-         return null;
       }
+      return best;
    }
 
    public static class_243 nearestPoint(class_243 eye, class_1297 e) {
@@ -71,68 +67,50 @@ public final class TargetUtil {
 
    public static class_1297 crosshairEntity() {
       class_310 mc = class_310.method_1551();
-      class_239 var2 = mc.field_1765;
-      class_1297 var10000;
-      if (var2 instanceof class_3966 ehr) {
-         var10000 = ehr.method_17782();
-      } else {
-         var10000 = null;
-      }
-
-      return var10000;
+      class_239 hit = mc.field_1765;
+      return hit instanceof class_3966 ehr ? ehr.method_17782() : null;
    }
 
    public static boolean isWeapon(class_1799 stack, String extraKeywords) {
       if (stack != null && !stack.method_7960()) {
          class_2960 id = class_7923.field_41178.method_10221(stack.method_7909());
          String path = id.method_12832().toLowerCase(Locale.ROOT);
-         if (!path.endsWith("_sword") && (!path.endsWith("_axe") || path.endsWith("_pickaxe")) && !path.equals("trident") && !path.equals("mace") && !path.equals("bow") && !path.equals("crossbow")) {
-            if (extraKeywords != null && !extraKeywords.isBlank()) {
-               for(String kw : extraKeywords.split(",")) {
-                  String k = kw.trim().toLowerCase(Locale.ROOT);
-                  if (!k.isEmpty() && path.contains(k)) {
-                     return true;
-                  }
-               }
-            }
-
-            return false;
-         } else {
+         if (path.endsWith("_sword") || path.endsWith("_axe") && !path.endsWith("_pickaxe") || path.equals("trident") || path.equals("mace") || path.equals("bow") || path.equals("crossbow")) {
             return true;
          }
-      } else {
-         return false;
+         if (extraKeywords != null && !extraKeywords.isBlank()) {
+            for (String kw : extraKeywords.split(",")) {
+               String k = kw.trim().toLowerCase(Locale.ROOT);
+               if (!k.isEmpty() && path.contains(k)) {
+                  return true;
+               }
+            }
+         }
       }
+      return false;
    }
 
    public static boolean shieldUp(class_1297 e, int minUseTicks) {
-      if (e instanceof class_1309 living) {
-         if (!living.method_6039()) {
-            return false;
-         } else if (minUseTicks <= 0) {
-            return true;
-         } else {
-            try {
-               return living.method_75120(0.0F) >= (float)minUseTicks;
-            } catch (Throwable var4) {
-               return true;
-            }
-         }
-      } else {
+      if (!(e instanceof class_1309 living) || !living.method_6039()) {
          return false;
+      }
+      if (minUseTicks <= 0) {
+         return true;
+      }
+      try {
+         return living.method_75120(0.0F) >= (float)minUseTicks;
+      } catch (Throwable ignored) {
+         return true;
       }
    }
 
    public static boolean isAxe(class_1799 stack) {
-      if (stack != null && !stack.method_7960()) {
-         String path = class_7923.field_41178.method_10221(stack.method_7909()).method_12832().toLowerCase(Locale.ROOT);
-         return path.endsWith("_axe") && !path.endsWith("_pickaxe");
-      } else {
-         return false;
-      }
+      if (stack == null || stack.method_7960()) return false;
+      String path = class_7923.field_41178.method_10221(stack.method_7909()).method_12832().toLowerCase(Locale.ROOT);
+      return path.endsWith("_axe") && !path.endsWith("_pickaxe");
    }
 
    public static boolean isSword(class_1799 stack) {
-      return stack != null && !stack.method_7960() ? class_7923.field_41178.method_10221(stack.method_7909()).method_12832().toLowerCase(Locale.ROOT).endsWith("_sword") : false;
+      return stack != null && !stack.method_7960() && class_7923.field_41178.method_10221(stack.method_7909()).method_12832().toLowerCase(Locale.ROOT).endsWith("_sword");
    }
 }
