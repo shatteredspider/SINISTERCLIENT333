@@ -3,6 +3,7 @@ package dev.sevenclient.module;
 import dev.sevenclient.SevenClient;
 import dev.sevenclient.module.impl.AimAssist;
 import dev.sevenclient.module.impl.AimAssist2;
+import dev.sevenclient.module.impl.ArmorMacro;
 import dev.sevenclient.module.impl.Audit;
 import dev.sevenclient.module.impl.Chams;
 import dev.sevenclient.module.impl.ClickGuiModule;
@@ -17,9 +18,11 @@ import dev.sevenclient.module.impl.JumpReset;
 import dev.sevenclient.module.impl.Nametags;
 import dev.sevenclient.module.impl.NotificationsModule;
 import dev.sevenclient.module.impl.PingSpoof;
+import dev.sevenclient.module.impl.QuickPotion;
 import dev.sevenclient.module.impl.STap;
 import dev.sevenclient.module.impl.ShiftTap;
 import dev.sevenclient.module.impl.SilentAim;
+import dev.sevenclient.module.impl.SmpTotem;
 import dev.sevenclient.module.impl.SocialList;
 import dev.sevenclient.module.impl.TargetESP;
 import dev.sevenclient.module.impl.Triggerbot;
@@ -51,6 +54,9 @@ public final class ModuleManager {
       this.add(new STap());
       this.add(new ShiftTap());
       this.add(new JumpReset());
+      this.add(new SmpTotem());
+      this.add(new QuickPotion());
+      this.add(new ArmorMacro());
       this.add(new FastXP());
       this.add(new PingSpoof());
       this.add(new EnemyMarker());
@@ -174,7 +180,7 @@ public final class ModuleManager {
       for(Module m : this.modules) {
          if (m.isEnabled()) {
             try {
-               m.onHudRender(ctx);
+            m.onHudRender(ctx);
             } catch (Throwable t) {
                this.crash(m, t);
             }
