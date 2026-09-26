@@ -1,7 +1,7 @@
 package dev.sevenclient.util;
 
 import net.minecraft.class_1297;
-import net.minecraft.class_2831;
+import net.minecraft.class_2828.class_2831;
 import net.minecraft.class_310;
 import net.minecraft.class_3532;
 import net.minecraft.class_746;
@@ -114,7 +114,7 @@ public final class RotationSync {
         heldPlayer = player;
         heldYaw = player.method_36454();
         heldPitch = player.method_36455();
-        heldHeadYaw = player.method_5847();
+        heldHeadYaw = player.method_5791();
         held = true;
         player.method_36456(r[0]);
         player.method_5847(r[0]);
