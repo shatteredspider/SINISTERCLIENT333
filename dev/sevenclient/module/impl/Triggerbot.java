@@ -13,6 +13,7 @@ import dev.sevenclient.util.Human;
 import dev.sevenclient.util.HumanDiag;
 import dev.sevenclient.util.SlotUtil;
 import dev.sevenclient.util.SprintGuard;
+import dev.sevenclient.util.TargetPriority;
 import dev.sevenclient.util.TargetUtil;
 import java.lang.reflect.Field;
 import net.minecraft.class_1294;
@@ -108,7 +109,10 @@ public class Triggerbot extends Module {
             HumanDiag.triggerState = "held item is not a weapon";
          } else {
             class_1297 hit = TargetUtil.crosshairEntity();
-            if (this.valid(hit) && !((double)mc.field_1724.method_5739(hit) > this.range.val())) {
+            if (!TargetPriority.isAllowed(hit, this.range.val(), this.enemiesOnly.is())) {
+               this.disarm();
+               HumanDiag.triggerState = "crosshair is not on priority target";
+            } else if (this.valid(hit) && !((double)mc.field_1724.method_5739(hit) > this.range.val())) {
                if (hit.method_5628() != this.armedOn) {
                   this.armedOn = hit.method_5628();
                   this.opportunityStart = now;
