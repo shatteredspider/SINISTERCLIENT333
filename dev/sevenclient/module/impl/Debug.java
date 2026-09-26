@@ -31,6 +31,10 @@ public class Debug extends Module {
       Module.notifyToggles = this.toggleMessages.is();
    }
 
+   public void onDisable() {
+      Module.notifyToggles = true;
+   }
+
    public void onHudRender(class_332 ctx) {
       if (mc.field_1755 == null || this.showWhenGuiOpen.is()) {
          int active = 0;
