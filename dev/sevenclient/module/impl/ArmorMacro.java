@@ -32,64 +32,70 @@ public final class ArmorMacro extends Module {
     }
 
     @Override public void onDisable() {
-        for (int i = 0; i < 4; i++) { queued[i] = false; wasDown[i] = false; clear(i); }
-        owner = null; // Never re-equip behind the user's back on disable.
+        for (int i = 0; i < 4; i++) { queued[i] = false; wasDown[i] = keys[i].down(); clear(i); }
+        owner = null; // Never re-equip on disable.
     }
 
     @Override public void onTick() {
+        boolean[] edge = new boolean[4];
+        for (int i = 0; i < 4; i++) {
+            boolean raw = keys[i].down();
+            edge[i] = raw && !wasDown[i];
+            wasDown[i] = raw; // Sample raw state even while a GUI is open.
+        }
         if (mc.field_1724 == null) { reset(); return; }
         if (owner != null && owner != mc.field_1724) reset();
         boolean allowed = mc.field_1755 == null || InventoryActions.handler(mc, true) != null;
-        for (int i = 0; i < 4; i++) {
-            boolean down = allowed && keys[i].down();
-            if (down && !wasDown[i]) queued[i] = true;
-            wasDown[i] = down;
-        }
+        for (int i = 0; i < 4; i++) if (allowed && edge[i]) queued[i] = true;
         class_1703 handler = InventoryActions.handler(mc, requireOpen.is());
-        if (handler == null) { for (int i = 0; i < 4; i++) queued[i] = false; return; }
+        if (handler == null) {
+            if (mc.field_1755 != null && !allowed) for (int i = 0; i < 4; i++) queued[i] = false;
+            return;
+        }
         for (int i = 0; i < 4; i++) {
             if (!queued[i]) continue;
-            queued[i] = false;
-            if (savedHotbar[i] >= 0) {
-                if (!removeOnly.is()) restore(handler, i);
-                else clear(i);
-            } else remove(handler, i);
-            // A shared key queues all pieces. Subsequent ticks process the rest.
+            // Keep a valid key edge queued when the shared budget is temporarily full.
+            boolean done = savedHotbar[i] >= 0 && !removeOnly.is()
+                    ? restore(handler, i) : remove(handler, i);
+            if (done) queued[i] = false;
             return;
         }
     }
 
-    private void remove(class_1703 handler, int piece) {
+    private boolean remove(class_1703 handler, int piece) {
         int armor = 5 + piece;
         class_1799 worn = InventoryActions.stack(handler, armor);
-        if (InventoryActions.empty(worn)) return;
-        // Reserve a distinct empty hotbar slot; never overwrite tools or other removed pieces.
+        if (InventoryActions.empty(worn)) return true;
         for (int h = 0; h < 9; h++) {
             if (!InventoryActions.empty(InventoryActions.stack(handler, 36 + h))) continue;
+            if (!InventoryActions.canSwap(mc, handler, armor, h, requireOpen.is())) return true;
             class_1799 copy = InventoryActions.snapshot(worn);
-            if (InventoryActions.swap(mc, handler, armor, h, requireOpen.is())) {
-                owner = mc.field_1724;
-                savedHotbar[piece] = h;
-                removed[piece] = copy;
-            }
-            return;
+            if (!InventoryActions.swap(mc, handler, armor, h, requireOpen.is())) return false;
+            owner = mc.field_1724;
+            savedHotbar[piece] = h;
+            removed[piece] = copy;
+            return true;
         }
+        return true;
     }
 
-    private void restore(class_1703 handler, int piece) {
+    private boolean restore(class_1703 handler, int piece) {
         int h = savedHotbar[piece];
         if (owner != mc.field_1724 || !InventoryActions.empty(InventoryActions.stack(handler, 5 + piece))
                 || !InventoryActions.same(InventoryActions.stack(handler, 36 + h), removed[piece])) {
             clear(piece);
-            return;
+            return true;
         }
-        if (InventoryActions.swap(mc, handler, 5 + piece, h, requireOpen.is())) clear(piece);
+        if (!InventoryActions.canSwap(mc, handler, 5 + piece, h, requireOpen.is())) return true;
+        if (!InventoryActions.swap(mc, handler, 5 + piece, h, requireOpen.is())) return false;
+        clear(piece);
+        return true;
     }
 
     private void clear(int piece) { savedHotbar[piece] = -1; removed[piece] = null; }
 
     private void reset() {
-        for (int i = 0; i < 4; i++) { queued[i] = false; wasDown[i] = false; clear(i); }
+        for (int i = 0; i < 4; i++) { queued[i] = false; clear(i); }
         owner = null;
     }
 }

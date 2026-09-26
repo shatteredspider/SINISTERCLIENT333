@@ -1,7 +1,8 @@
 package dev.sevenclient.util;
 
-import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import net.minecraft.class_1657;
+import net.minecraft.class_1661;
 import net.minecraft.class_1703;
 import net.minecraft.class_1713;
 import net.minecraft.class_1735;
@@ -10,18 +11,28 @@ import net.minecraft.class_310;
 import net.minecraft.class_465;
 import net.minecraft.class_490;
 
-/** Player-handler slot clicks only. No client-side inventory mutation or synthetic packets. */
+/** Player inventory handler only. SWAP never puts a stack on the cursor. */
 public final class InventoryActions {
-    private static long lastClick;
-
     private InventoryActions() {}
+
+    private static boolean layout(class_1703 handler, class_1661 inventory) {
+        if (handler.field_7761.size() != 46) return false;
+        for (int id = 5; id <= 45; id++) {
+            class_1735 slot = handler.method_7611(id);
+            int index = id <= 8 ? 44 - id : id <= 35 ? id : id <= 44 ? id - 36 : 40;
+            if (slot == null || slot.field_7874 != id || slot.field_7871 != inventory
+                    || slot.method_34266() != index) return false;
+        }
+        return true;
+    }
 
     public static class_1703 handler(class_310 mc, boolean inventoryOpenOnly) {
         if (mc.field_1724 == null || mc.field_1761 == null) return null;
         class_1657 player = mc.field_1724;
         class_1703 handler = player.field_7498;
         if (handler == null || player.field_7512 != handler || handler.field_7763 != 0
-                || !handler.method_34255().method_7960() || handler.field_7761.size() != 46) return null;
+                || !handler.method_34255().method_7960()
+                || !layout(handler, player.method_31548())) return null;
         if (inventoryOpenOnly) {
             if (!(mc.field_1755 instanceof class_490 screen) || screen.method_17577() != handler) return null;
         } else if (mc.field_1755 != null
@@ -48,41 +59,46 @@ public final class InventoryActions {
         return empty(stack) ? null : stack.method_7972();
     }
 
-    /** One atomic server-side SWAP, never a cursor pickup sequence. */
-    public static boolean swap(class_310 mc, class_1703 expected, int slot, int button, boolean openOnly) {
+    /** Does not spend the action budget. Checks both halves of the SWAP. */
+    public static boolean canSwap(class_310 mc, class_1703 expected, int slot, int button, boolean openOnly) {
         class_1703 handler = handler(mc, openOnly);
-        long now = System.nanoTime();
-        if (handler == null || handler != expected || slot < 5 || slot > 45
-                || !(button == 40 || button >= 0 && button <= 8)
-                || now - lastClick < 75_000_000L) return false;
-        class_1735 target = handler.method_7611(slot);
-        if (!target.method_7674(mc.field_1724)) return false;
-        lastClick = now;
-        mc.field_1761.method_2906(handler.field_7763, slot, button, class_1713.field_7791, mc.field_1724);
+        if (handler == null || handler != expected || !(slot >= 9 && slot <= 35
+                || slot >= 5 && slot <= 8 || slot >= 36 && slot <= 44)
+                || !(button == 40 || button >= 0 && button <= 8)) return false;
+        int other = button == 40 ? 45 : 36 + button;
+        if (slot == other || button == 40 && slot >= 5 && slot <= 8) return false;
+        class_1735 source = handler.method_7611(slot);
+        class_1735 target = handler.method_7611(other);
+        class_1799 a = source.method_7677();
+        class_1799 b = target.method_7677();
+        if (empty(a) && empty(b)) return false;
+        return (empty(a) || source.method_7674(mc.field_1724))
+                && (empty(b) || target.method_7674(mc.field_1724))
+                && (empty(a) || target.method_7680(a))
+                && (empty(b) || source.method_7680(b));
+    }
+
+    public static boolean swap(class_310 mc, class_1703 expected, int slot, int button, boolean openOnly) {
+        if (!canSwap(mc, expected, slot, button, openOnly)) return false;
+        long now = System.currentTimeMillis();
+        if (!ActionBudget.claim("inventory_swap", 75L, now)) return false;
+        mc.field_1761.method_2906(expected.field_7763, slot, button, class_1713.field_7791, mc.field_1724);
         return true;
     }
 
-    /** Requires both an actual mouse hit and the GUI's current focused slot. */
+    /** Invoke the mapped hit-test, rather than trust a focused slot from a previous render. */
     public static int hoveredSource(class_310 mc, class_1703 handler) {
         if (!(mc.field_1755 instanceof class_490 screen) || screen.method_17577() != handler) return -1;
         try {
-            Field focus = class_465.class.getDeclaredField("field_2787");
-            Field originX = class_465.class.getDeclaredField("field_2776");
-            Field originY = class_465.class.getDeclaredField("field_2800");
-            focus.setAccessible(true);
-            originX.setAccessible(true);
-            originY.setAccessible(true);
-            class_1735 hovered = (class_1735) focus.get(screen);
-            if (hovered == null || hovered.field_7874 < 9 || hovered.field_7874 > 35
-                    || handler.method_7611(hovered.field_7874) != hovered) return -1;
+            Method at = class_465.class.getDeclaredMethod("method_64240", double.class, double.class);
+            at.setAccessible(true);
             double x = mc.field_1729.method_1603() * mc.method_22683().method_4486()
                     / mc.method_22683().method_4480();
             double y = mc.field_1729.method_1604() * mc.method_22683().method_4502()
                     / mc.method_22683().method_4507();
-            int left = originX.getInt(screen) + hovered.field_7873;
-            int top = originY.getInt(screen) + hovered.field_7872;
-            return x >= left && x < left + 16 && y >= top && y < top + 16
-                    ? hovered.field_7874 : -1;
+            class_1735 hovered = (class_1735) at.invoke(screen, x, y);
+            return hovered != null && hovered.field_7874 >= 9 && hovered.field_7874 <= 35
+                    && handler.method_7611(hovered.field_7874) == hovered ? hovered.field_7874 : -1;
         } catch (ReflectiveOperationException | RuntimeException failure) {
             return -1;
         }

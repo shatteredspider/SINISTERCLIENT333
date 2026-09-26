@@ -45,6 +45,7 @@ public final class QuickPotion extends Module {
     }
 
     private boolean matches(class_1799 stack, boolean strength) {
+        // Vanilla potion item and exact base potion entry, never an inferred status effect.
         if (InventoryActions.empty(stack) || !(stack.method_31574(class_1802.field_8574)
                 || stack.method_31574(class_1802.field_8436))) return false;
         class_1844 contents = stack.method_58694(class_9334.field_49651);
