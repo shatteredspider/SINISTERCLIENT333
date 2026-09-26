@@ -4,6 +4,7 @@
   "package": "dev.sevenclient.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "AttackRotationMixin",
     "CameraMixin",
     "ClientConnectionMixin",
     "ClientPlayerEntityMixin",

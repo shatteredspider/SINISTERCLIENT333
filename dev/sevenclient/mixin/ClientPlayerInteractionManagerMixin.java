@@ -3,6 +3,7 @@ package dev.sevenclient.mixin;
 import dev.sevenclient.SevenClient;
 import dev.sevenclient.util.Diagnostics;
 import dev.sevenclient.util.PacketAudit;
+import dev.sevenclient.util.TargetPriority;
 import net.minecraft.class_1297;
 import net.minecraft.class_1657;
 import net.minecraft.class_636;
@@ -21,6 +22,7 @@ public class ClientPlayerInteractionManagerMixin {
       ++Diagnostics.attackEvents;
       PacketAudit.onAttack(System.currentTimeMillis());
       if (SevenClient.get() != null) {
+         TargetPriority.onOutgoingAttack(target);
          SevenClient.get().modules.onAttack(target);
       }
 

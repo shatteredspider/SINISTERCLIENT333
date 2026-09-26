@@ -6,6 +6,7 @@ import dev.sevenclient.ui.ClickGuiScreen;
 import dev.sevenclient.util.EnemyManager;
 import dev.sevenclient.util.FrameDispatcher;
 import dev.sevenclient.util.FriendManager;
+import dev.sevenclient.util.TargetPriority;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
@@ -36,6 +37,7 @@ public final class SevenClient implements ClientModInitializer {
       this.config = new ConfigManager(this.modules);
       this.config.load();
       ClientTickEvents.START_CLIENT_TICK.register((ClientTickEvents.StartTick)(mc) -> {
+         TargetPriority.onWorldTick();
          if (mc.field_1724 != null && mc.field_1687 != null) {
             this.modules.pollBinds();
             this.modules.onTick();
