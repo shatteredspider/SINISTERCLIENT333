@@ -1,63 +1,46 @@
 package dev.sevenclient.module.impl;
 
-import dev.sevenclient.util.RotationSync;
 import java.util.Random;
 import net.minecraft.class_238;
 import net.minecraft.class_243;
 import net.minecraft.class_746;
+import dev.sevenclient.util.RotationSync;
 
 public final class SilentAimGlide {
-   private SilentAimGlide() {
-   }
+    private SilentAimGlide() {}
 
-   public static void approach(class_746 var0, double var1, double var3, double var5) {
-      double var7 = var5;
-      if (Double.isNaN(var5)) {
-         var7 = 0.05;
-      }
+    // Legacy callers receive a request, not a player-rotation mutation.
+    public static void approach(class_746 player, double yawDelta, double pitchDelta, double fraction) {
+        if (player == null || !Double.isFinite(yawDelta) || !Double.isFinite(pitchDelta)) return;
+        double f = Double.isFinite(fraction) ? Math.max(0.05, Math.min(1.0, fraction)) : 0.05;
+        RotationSync.requestSilent("SilentAim", RotationSync.PRIORITY_SILENT_AIM,
+                (float) (player.method_36454() + yawDelta * f), true,
+                (float) (player.method_36455() + pitchDelta * f));
+    }
 
-      var7 = Math.max(0.05, Math.min((double)1.0F, var7));
-      RotationSync.applyHidden(var0, var1 * var7, var3 * var7);
-   }
+    public static double[] jitteredPoint(Random rng, class_243 eye, class_238 box, double budget, double jitter) {
+        double minX = box.field_1323, maxX = box.field_1320;
+        double minY = box.field_1322, maxY = box.field_1325;
+        double minZ = box.field_1321, maxZ = box.field_1324;
+        double x = clamp(eye.field_1352, minX, maxX);
+        double y = clamp(eye.field_1351, minY, maxY);
+        double z = clamp(eye.field_1350, minZ, maxZ);
+        double j = Math.max(0.0, Math.min(jitter, 0.3));
+        x = clamp(x + (rng.nextDouble() * 2.0 - 1.0) * j, minX, maxX);
+        y = clamp(y + (rng.nextDouble() * 2.0 - 1.0) * j, minY, maxY);
+        z = clamp(z + (rng.nextDouble() * 2.0 - 1.0) * j, minZ, maxZ);
+        double dx = x - eye.field_1352, dy = y - eye.field_1351, dz = z - eye.field_1350;
+        double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (dist > budget && dist > 1.0E-6) {
+            double scale = budget / dist;
+            x = eye.field_1352 + dx * scale;
+            y = eye.field_1351 + dy * scale;
+            z = eye.field_1350 + dz * scale;
+        }
+        return new double[]{x, y, z};
+    }
 
-   public static double[] jitteredPoint(Random var0, class_243 var1, class_238 var2, double var3, double var5) {
-      double var7 = var2.field_1322;
-      double var9 = var2.field_1325;
-      double var11 = var1.field_1352;
-      double var13 = var1.field_1351;
-      double var15 = var1.field_1350;
-      double var17 = clamp(var11, var2.field_1323, var2.field_1320) + (var0.nextDouble() * (double)2.0F - (double)1.0F) * var5;
-      double var19 = clamp(var15, var2.field_1321, var2.field_1324) + (var0.nextDouble() * (double)2.0F - (double)1.0F) * var5;
-      double var21 = (var0.nextDouble() * (double)2.0F - (double)1.0F) * var5;
-      double var23 = clamp(var13, var7, var9);
-      double var25;
-      if (var13 < var23) {
-         var25 = var23 + var21 * (double)0.5F;
-      } else {
-         var25 = Math.min(var13, var9) - 0.275 + var21;
-      }
-
-      if (var25 < var7) {
-         var25 = var7;
-      } else if (var25 > var9) {
-         var25 = var9;
-      }
-
-      double var27 = var17 - var11;
-      double var29 = var25 - var13;
-      double var31 = var19 - var15;
-      double var33 = Math.sqrt(var27 * var27 + var29 * var29 + var31 * var31);
-      if (var33 > var3 && var33 > 1.0E-6) {
-         double var35 = var3 / var33;
-         var17 = var11 + var27 * var35;
-         var25 = var13 + var29 * var35;
-         var19 = var15 + var31 * var35;
-      }
-
-      return new double[]{var17, var25, var19};
-   }
-
-   private static double clamp(double var0, double var2, double var4) {
-      return var0 < var2 ? var2 : (var0 > var4 ? var4 : var0);
-   }
+    private static double clamp(double value, double min, double max) {
+        return Math.max(min, Math.min(max, value));
+    }
 }
