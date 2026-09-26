@@ -17,6 +17,7 @@ import net.minecraft.class_1309;
 import net.minecraft.class_1657;
 import net.minecraft.class_310;
 import net.minecraft.class_332;
+import net.minecraft.class_638;
 
 public class Chams extends Module {
    private final ModeSetting renderMode = (ModeSetting)this.reg(new ModeSetting("Render", "Model", new String[]{"Model", "Box", "Both"}));
@@ -37,6 +38,7 @@ public class Chams extends Module {
    private final NumberSetting radius = (NumberSetting)this.reg(new NumberSetting("Box Radius", (double)3.0F, (double)0.0F, (double)10.0F, (double)0.5F));
    private static volatile Chams active;
    private final Map<Integer, Ghost> ghosts = new HashMap();
+   private class_638 ghostWorld;
    private long lastNanos = 0L;
 
    public Chams() {
@@ -56,7 +58,20 @@ public class Chams extends Module {
    public void onDisable() {
       active = null;
       this.ghosts.clear();
+      this.ghostWorld = null;
       this.lastNanos = 0L;
+   }
+
+   public void onTick() {
+      this.refreshWorld();
+   }
+
+   private void refreshWorld() {
+      if (this.ghostWorld != mc.field_1687) {
+         this.ghosts.clear();
+         this.lastNanos = 0L;
+         this.ghostWorld = mc.field_1687;
+      }
    }
 
    public static boolean wantsOutline(class_1297 e) {
@@ -121,6 +136,7 @@ public class Chams extends Module {
    }
 
    public void onHudRender(class_332 ctx) {
+      this.refreshWorld();
       if (!this.renderMode.is("Model") && mc.field_1724 != null && mc.field_1687 != null && !mc.field_1690.field_1842) {
          float dt = this.dt();
          Projection.View view = Projection.capture();
