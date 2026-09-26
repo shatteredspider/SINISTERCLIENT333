@@ -127,6 +127,9 @@ public class HitSwap extends Module {
                               return;
                            }
                            if (!this.syncSlot()) {
+                              // The attack was not sent. Restore the local selection now instead of
+                              // leaving the partner selected until the next tick.
+                              this.restoreNow();
                               HumanDiag.hitSwapState = "slot sync invoker unavailable, holding fire";
                               return;
                            }
