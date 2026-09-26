@@ -12,6 +12,7 @@
     "ClientPlayerInteractionManagerMixin",
     "EntityRendererMixin",
     "EntityVelocityMixin",
+    "IncomingDamageMixin",
     "InteractionRotationMixin",
     "KeyBindingAccessor",
     "MinecraftClientAccessor",
