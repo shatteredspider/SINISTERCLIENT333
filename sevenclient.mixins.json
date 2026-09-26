@@ -1,0 +1,24 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.sevenclient.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "CameraMixin",
+    "ClientConnectionMixin",
+    "ClientPlayerEntityMixin",
+    "ClientPlayerInteractionManagerAccessor",
+    "ClientPlayerInteractionManagerMixin",
+    "EntityRendererMixin",
+    "EntityVelocityMixin",
+    "InteractionRotationMixin",
+    "KeyBindingAccessor",
+    "MinecraftClientAccessor",
+    "MinecraftClientOutlineMixin",
+    "MouseMixin",
+    "MouseScrollMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}
