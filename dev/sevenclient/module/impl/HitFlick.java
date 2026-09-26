@@ -1,5 +1,6 @@
 package dev.sevenclient.module.impl;
 
+import dev.sevenclient.SevenClient;
 import dev.sevenclient.module.Category;
 import dev.sevenclient.module.Module;
 import dev.sevenclient.module.setting.BoolSetting;
@@ -8,6 +9,7 @@ import dev.sevenclient.util.Diagnostics;
 import dev.sevenclient.util.HumanRandom;
 import dev.sevenclient.util.RotationSync;
 import dev.sevenclient.util.Rotations;
+import dev.sevenclient.util.TargetPriority;
 import net.minecraft.class_1297;
 import net.minecraft.class_1657;
 import net.minecraft.class_239;
@@ -26,6 +28,8 @@ public class HitFlick extends Module {
     private final NumberSetting returnSpeed = reg(new NumberSetting("Return Speed", 30.0, 4.0, 200.0, 1.0));
     private final NumberSetting maxTicks = reg(new NumberSetting("Max Flick Ticks", 4.0, 1.0, 10.0, 1.0));
     private final BoolSetting returnAfter = reg(new BoolSetting("Return After", true));
+    private final BoolSetting enemiesOnly = reg(new BoolSetting("Enemies Only", false));
+    private final NumberSetting priorityRange = reg(new NumberSetting("Priority Range", 4.2, 1.0, 6.0, 0.1));
     private static final String OWNER = "HitFlick";
     private long lastFlick;
     private boolean rolled;
@@ -91,7 +95,12 @@ public class HitFlick extends Module {
         class_239 hit = mc.field_1765;
         if (hit instanceof class_3966 entityHit) {
             class_1297 entity = entityHit.method_17782();
-            if (entity instanceof class_1657 player && player != mc.field_1724 && !player.method_7325()) return player;
+            if (entity instanceof class_1657 player && player != mc.field_1724
+                    && player.method_5805() && !player.method_7325()
+                    && !SevenClient.get().friends.is(player)
+                    && (!enemiesOnly.is() || SevenClient.get().enemies.is(player))
+                    && mc.field_1724.method_33571().method_1022(player.method_33571()) <= priorityRange.val()
+                    && TargetPriority.isAllowed(player, priorityRange.val(), enemiesOnly.is())) return player;
         }
         return null;
     }

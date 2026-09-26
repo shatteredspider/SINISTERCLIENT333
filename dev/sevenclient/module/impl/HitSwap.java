@@ -12,6 +12,7 @@ import dev.sevenclient.util.ActionBudget;
 import dev.sevenclient.util.HumanDiag;
 import dev.sevenclient.util.SlotGuard;
 import dev.sevenclient.util.SlotUtil;
+import dev.sevenclient.util.TargetPriority;
 import dev.sevenclient.util.TargetUtil;
 import java.util.Objects;
 import java.util.Random;
@@ -25,6 +26,7 @@ public class HitSwap extends Module {
    private final BoolSetting requireClick = (BoolSetting)this.reg(new BoolSetting("Require Click", true));
    private final BoolSetting onlyShield = (BoolSetting)this.reg(new BoolSetting("Only On Shield", true));
    private final BoolSetting enemiesOnly = (BoolSetting)this.reg(new BoolSetting("Enemies Only", false));
+   private final NumberSetting priorityRange = (NumberSetting)this.reg(new NumberSetting("Priority Range", 4.2, 1.0, 6.0, 0.1));
    private final NumberSetting shieldMinTicks = (NumberSetting)this.reg(new NumberSetting("Shield Min Ticks", 5.0, 0.0, 20.0, 1.0));
    private final BoolSetting doubleHit = (BoolSetting)this.reg(new BoolSetting("Double Hit", false));
    private final BoolSetting requireCharge = (BoolSetting)this.reg(new BoolSetting("Require Charge", true));
@@ -231,7 +233,9 @@ public class HitSwap extends Module {
          if (entity instanceof class_1657 player && player != mc.field_1724
                && player.method_5805() && !player.method_7325()
                && !SevenClient.get().friends.is(player)
-               && (!this.enemiesOnly.is() || SevenClient.get().enemies.is(player))) {
+               && (!this.enemiesOnly.is() || SevenClient.get().enemies.is(player))
+               && mc.field_1724.method_33571().method_1022(player.method_33571()) <= this.priorityRange.val()
+               && TargetPriority.isAllowed(player, this.priorityRange.val(), this.enemiesOnly.is())) {
             return player;
          }
       }
