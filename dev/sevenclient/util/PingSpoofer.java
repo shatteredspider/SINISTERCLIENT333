@@ -1,5 +1,6 @@
 package dev.sevenclient.util;
 
+import dev.sevenclient.SevenClient;
 import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -47,7 +48,8 @@ public final class PingSpoofer {
                try {
                   passthrough.set(true);
                   connection.method_10743(packet);
-               } catch (Throwable var6) {
+               } catch (Throwable failure) {
+                  SevenClient.LOG.warn("Deferred keep-alive send failed", failure);
                } finally {
                   passthrough.set(false);
                }
