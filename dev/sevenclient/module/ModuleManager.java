@@ -180,7 +180,7 @@ public final class ModuleManager {
       for(Module m : this.modules) {
          if (m.isEnabled()) {
             try {
-            m.onHudRender(ctx);
+               m.onHudRender(ctx);
             } catch (Throwable t) {
                this.crash(m, t);
             }
